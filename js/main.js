@@ -1,13 +1,16 @@
-const video = document.querySelector('.player');
-const canvas = document.querySelector('.photo');
+const video = document.querySelector('[data-js="player"]');
+const canvas = document.querySelector('[data-js="photo"]');
 const ctx = canvas.getContext('2d');
-const strip = document.querySelector('.strip');
-const snap = document.querySelector('.snap');
+const strip = document.querySelector('[data-js="strip"]');
+const snap = document.querySelector('[data-js="snap"]');
+const inputs = document.querySelectorAll('[data-js="controls-input"]');
+
+let width, height, pixels;
+let red = 30, green = 30, blue = 30;
 
 function getVideo() {
   navigator.mediaDevices.getUserMedia({ video: true, audio: false })
     .then(localMediaStream => {
-      console.log(localMediaStream);
       video.src = window.URL.createObjectURL(localMediaStream);
       video.play();
   })
@@ -17,67 +20,43 @@ function getVideo() {
 }
 
 function paintToCanavas() {
-  const width =  video.videoWidth;
-  const height = video.videoHeight;
+  width =  video.videoWidth;
+  height = video.videoHeight;
   canvas.width = width;
   canvas.height = height;
 
   return setInterval(() => {
     ctx.drawImage(video, 0, 0, width, height);
-
-    // take the pixels out
-    let pixels = ctx.getImageData(0, 0, width, height);
-    // mess with them
-    pixels = greenScreen(pixels);
-    // put them back
-    ctx.putImageData(pixels, 0, 0);
+      showEffect();
    }, 16);
-
 }
 
-function redEffect(pixels) {
+function showEffect() {
+  // take the pixels out
+  pixels = ctx.getImageData(0, 0, width, height);
+
+  // mess with them
+  pixels = rgbSplit(pixels);
+
+  // put them back
+  ctx.putImageData(pixels, 0, 0);
+}
+
+function rgbSplit() {
   for(let i = 0; i < pixels.data.length; i+=4) {
-    pixels.data[i + 0] = pixels.data[i + 0] + 100; // RED
-    pixels.data[i + 1] = pixels.data[i + 1] - 50; // GREEN
-    pixels.data[i + 2] = pixels.data[i + 2] * 0.5;//  BLUE
+    pixels.data[i + 0] = pixels.data[i + 0] + red; // RED
+    pixels.data[i + 1] = pixels.data[i + 1] - green; // GREEN
+    pixels.data[i + 2] = pixels.data[i + 2] * blue;//  BLUE
   }
   return pixels;
 }
 
-function rgbSplit(pixels) {
-  for(let i = 0; i < pixels.data.length; i+=4) {
-    pixels.data[i - 150] = pixels.data[i + 0] + 100; // RED
-    pixels.data[i + 300] = pixels.data[i + 1] - 50; // GREEN
-    pixels.data[i - 340] = pixels.data[i + 2] * 0.5;//  BLUE
-  }
-  return pixels;
-}
-
-function greenScreen(pixels) {
-  const levels = {};
-
-  document.querySelectorAll('.rgb input').forEach((input) => {
-    levels[input.name] = input.value;
-  });
-
-  for (i = 0; i < pixels.data.length; i = i + 4) {
-    red = pixels.data[i + 0];
-    green = pixels.data[i + 1];
-    blue = pixels.data[i + 2];
-    alpha = pixels.data[i + 3];
-
-    if (red >= levels.rmin
-      && green >= levels.gmin
-      && blue >= levels.bmin
-      && red <= levels.rmax
-      && green <= levels.gmax
-      && blue <= levels.bmax) {
-      // take it out!
-      pixels.data[i + 3] = 0;
-    }
-  }
-
-  return pixels;
+function updateVar(e) {
+  const target = parseFloat(e.target.value);
+  const name = e.target.name;
+  if(name === 'red') { red = target }
+  if(name === 'green') { red = target }
+  if(name === 'blue') { red = target }
 }
 
 function takePhoto() {
@@ -98,3 +77,6 @@ function takePhoto() {
 getVideo();
 
 video.addEventListener('canplay', paintToCanavas);
+inputs.forEach((input) => {
+    this.addEventListener('click', updateVar);
+});
